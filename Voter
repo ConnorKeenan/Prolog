@@ -1,0 +1,105 @@
+%Connor Keenan
+%Programming Languages, Prolog Assignment
+%Dr. Tinkham
+%11/21/18
+
+%Desired predicate, ScoreList and BScore are needed to run a final predicate for BestCandidates
+%best_candidates(+Voter, +Candidates, -BestCandidates)
+best_candidates(Voter, Candidates, BestCandidates):-
+agreement_score_list(Voter, Candidates, ScoreList), max(ScoreList, BScore), dwindle(ScoreList, BScore, BestCandidates).
+
+%Dwindles down ScoreList to a list of names that have the greatest opinion score
+%dwindle(+ScoreList, +BestScore, -BestMatches)
+dwindle([], BestScore, []).
+dwindle([[CN|[CSH|CST]]|CT], BestScore, BestMatches):-
+        check_score([CN, CSH], BestScore, List),
+        dwindle(CT, BestScore, BestMatches1),
+        append(List, BestMatches1, BestMatches).
+
+%Looks at a nested list, a Candidate Name and Score. Returned to list only if it has a max score.
+%check_score(+CandidateNameScore, +BestScore, -List)
+check_score([CN|[CSH|CSe]], BestScore, List):-
+        (BestScore =:= CSH -> List = [CN];
+         List = []).
+
+%Recursively finds the maximum score
+%max(+ScoreList, -maxScore)
+max(ScoreList, L):-
+        ScoreList = [[CN|[CSH|CST]]|T],
+        max2(ScoreList, CSH, L).
+
+%Finds the max between two scores and returns it to max
+%max2(+ScoreList, +Score, -MaxScore).
+max2([], A, A).
+max2([[CN|[CSH|CST]]|T], A, X):-
+        (CSH > A -> max2(T, CSH, X);
+         max2(T, A, X)).
+         
+%The Voter scores are compared with a every Candidate.  
+%agreement_score_list(+Voter, +CandidateList, -List'O'Scores).
+agreement_score_list(Voter, [], []).
+agreement_score_list(Voter, [[CH|CT]|L], [SH|ST]):-
+        opinions(Voter, CT, Score),
+        SH = [CH, Score],
+        agreement_score_list(Voter, L, ST).
+        
+%The Voter scores are compared with a single Candidate's scores.         
+% opinions(+VoterList, +CandidateList, -CandidateScore)
+opinions([], [], 0).
+opinions([VH|VT], [CH|CT], Score):-
+compare_opinion(VH, CH, Score1), %compute_matchScores(VH, CH, Score1)
+        opinions(VT, CT, Score2),
+        Score is Score1+Score2.
+
+%Voter and Candidates Opinions, agree/disagree
+%compare_opinion(+VoterOpinion, +CandidateOpinion, -Score)
+compare_opinion(X, Y, M) :-
+        (X =\= 0,
+         Y =\= 0,
+         X =:= Y -> M is 1;
+         X =\= 0,
+         Y =\= 0,
+         X =\= Y -> M is -1;
+         M is 0).
+        
+%Retired        
+%Does the voter agree or disagree with selected Candidate Opinion?        
+%compute_matchScore(+VoterOpinion, +CandidateOpinion, -SingleOpinionScore)
+compute_matchScores(X, Y, M) :-
+agree(X,Y) -> M is 1;
+disagree(X,Y), M is -1;
+M is 0.
+   
+%Retired   
+%Checks agreement on Candidate Opinion and Voter Opinion
+%agree(+CandidateOpinion, +VoterOpinion) 
+agree(A, B):- A =:= 1, B =:= 1; A =:= -1, B =:= -1.
+
+%Retired
+%Checks disagreement on Candidate Opinion and Voter Opinion
+%disagree(+CandidateOpinion, +VoterOpinion) 
+disagree(A, B):- A =:= -1, B =:= 1; A =:= 1, B =:= -1.
+      
+%test1(-BestMatches)      
+%First set of test data
+test1(BestMatches):-
+best_candidates(
+[            0,   0,   0,   1,   1,   1,  -1,  -1,  -1,   1],
+[[adams,     1,   1,   1,   1,   1,   1,   1,   1,   1,   1],%1
+[grant,    -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1],%-1
+[polk,      1,  -1,   1,  -1,   1,  -1,   1,  -1,   1,  -1],%-3
+[jackson,   1,   0,   1,   0,   1,   0,   1,   0,   1,   0],%-1
+[taft,      0,  -1,   0,  -1,   0,  -1,   0,  -1,   0,  -1],%-2
+[ford,      1,   1,   1,   1,   0,   0,   0,   0,   0,   0],%1
+[madison,   0,   0,   0,   1,  -1,   0,   0,  -1,   1,   1]],%1
+BestMatches).
+	
+%test2(-BestMatches)      
+%First set of test data
+test2(BestMatches) :-
+best_candidates(
+[           -1,  -1,  -1,  -1,  -1,   1,   1,   1,   1,   1],
+[[wilson,   -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1],%0
+[taylor,  -1,  -1,  -1,   1,   1,   1,   1,   1,   1,   1],%6
+[monroe,  -1,  -1,  -1,   1,   1,  -1,  -1,   1,   1,   1]],%3
+BestMatches).
